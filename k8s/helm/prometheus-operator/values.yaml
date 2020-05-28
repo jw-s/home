@@ -1,0 +1,91 @@
+additionalPrometheusRules: []
+alertmanager:
+  enabled: false
+coreDns:
+  enabled: true
+grafana:
+  sidecar:
+    image: joelws/k8s-sidecar:0.1.99-arm
+  additionalDataSources: []
+  enabled: true
+kube-state-metrics:
+  enabled: false
+kubeApiServer:
+  enabled: true
+kubeControllerManager:
+  enabled: true
+  endpoints: []
+kubeEtcd:
+  enabled: true
+  endpoints: []
+kubeProxy:
+  enabled: true
+  endpoints: []
+kubeScheduler:
+  enabled: true
+  endpoints: []
+kubeStateMetrics:
+  enabled: false
+kubelet:
+  enabled: true
+  namespace: kube-system
+nodeExporter:
+  enabled: true
+prometheus:
+  additionalPodMonitors: []
+  additionalServiceMonitors: []
+  annotations: {}
+  enabled: true
+  ingress:
+    annotations: {}
+    enabled: false
+    hosts: []
+    labels: {}
+    paths: []
+    tls: []
+  ingressPerReplica:
+    annotations: {}
+    enabled: false
+    hostDomain: ""
+    hostPrefix: ""
+    labels: {}
+    paths: []
+    tlsSecretName: ""
+    tlsSecretPerReplica:
+      enabled: false
+      prefix: prometheus
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable: ""
+    minAvailable: 1
+  podSecurityPolicy:
+    allowedCapabilities: []
+  prometheusSpec:
+    image:
+      repository: quay.io/prometheus/prometheus
+      tag: v2.17.2
+    replicas: 1
+    resources: {}
+    retention: 10d
+    retentionSize: "5GB"
+    walCompression: true
+prometheusOperator:
+  admissionWebhooks:
+    enabled: true
+  image:
+    pullPolicy: IfNotPresent
+    repository: quay.io/coreos/prometheus-operator
+    tag: v0.39.0
+  kubeletService:
+    enabled: true
+    namespace: kube-system
+  manageCrds: false # disabled until upstream chart is fixed
+  configmapReloadImage:
+    repository: jimmidyson/configmap-reload
+    tag: v0.3.0
+  prometheusConfigReloaderImage:
+    repository: quay.io/coreos/prometheus-config-reloader
+    tag: v0.39.0
+  resources: {}
+  tlsProxy:
+    enabled: false
