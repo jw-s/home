@@ -101,7 +101,7 @@ prometheus:
   prometheusSpec:
     image:
       repository: quay.io/prometheus/prometheus
-      tag: v2.17.2
+      tag: v2.19.0
     replicas: 1
     resources: {}
     retention: 10d
