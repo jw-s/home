@@ -4,28 +4,66 @@ alertmanager:
 coreDns:
   enabled: true
 grafana:
+  persistence:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 2Gi
+  ingress:
+    enabled: true
+    annotations:
+      "cert-manager.io/issuer": letsencrypt-prod
+    hosts:
+      - "grafana.jdws.dev"
+    path: "/"
+    tls:
+      - hosts:
+        - grafana.jdws.dev
+        secretName: grafana-tls
+  grafana.ini:
+    server:
+      root_url: https://grafana.jdws.dev
+    auth.github:
+      enabled: true
+      client_id: id
+      client_secret: secret
+      scopes: user:email,read:org
+      auth_url: https://github.com/login/oauth/authorize
+      token_url: https://github.com/login/oauth/access_token
+      api_url: https://api.github.com/user
+      allow_sign_up: true
+      allowed_organizations: haggis-io
   sidecar:
     image: joelws/k8s-sidecar:0.1.99-arm
   additionalDataSources: []
   enabled: true
 kube-state-metrics:
-  enabled: false
+  enabled: true
+  image:
+    repository: joelws/kube-state-metrics-arm
+    tag: v1.9.5
+    pullPolicy: IfNotPresent
 kubeApiServer:
   enabled: true
 kubeControllerManager:
   enabled: true
-  endpoints: []
+  endpoints: 
+    - 192.168.178.23
 kubeEtcd:
-  enabled: true
-  endpoints: []
+  enabled: false
+  endpoints: 
+    - 192.168.178.23
 kubeProxy:
   enabled: true
-  endpoints: []
+  endpoints: 
+    - 192.168.178.23
+    - 192.168.178.30
 kubeScheduler:
   enabled: true
-  endpoints: []
+  endpoints: 
+    - 192.168.178.23
 kubeStateMetrics:
-  enabled: false
+  enabled: true
 kubelet:
   enabled: true
   namespace: kube-system

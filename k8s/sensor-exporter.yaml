@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-exporter
+  namespace: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor-exporter
+  template:
+    metadata:
+      labels:
+        app: sensor-exporter
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - sensor-exporter
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - image: joelws/mqtt-sensor-exporter:0.1
+        args:
+          - "-broker-address"
+          - "192.168.178.23:32095"
+        name: exporter
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 50m
+            memory: 50Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sensor-exporter
+  name: sensor-exporter
+  namespace: prometheus
+spec:
+  ports:
+  - name: metrics
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: sensor-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: sensor-exporter
+    release: prometheus-operator
+  name: sensor-exporter
+  namespace: prometheus
+spec:
+  endpoints:
+  - honorLabels: true
+    port: metrics
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: sensor-exporter
+
