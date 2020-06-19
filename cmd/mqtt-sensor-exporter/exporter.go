@@ -2,33 +2,48 @@ package main
 
 import (
 	"crypto/tls"
+	"flag"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync/atomic"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"strconv"
-	"sync/atomic"
-	"net/http"
-	"flag"
 )
 
 var (
-	brokerAddress = flag.String("broker-address", "127.0.0.1:1883", "Mqtt broker address")
+	brokerAddress  = flag.String("broker-address", "127.0.0.1:1883", "Mqtt broker address")
 	moistureSensor = prometheus.NewDesc(
 		prometheus.BuildFQName("mqtt", "plant", "moisture_sensor_value"),
 		"Moisture Sensor value",
 		[]string{"plant"},
 		nil,
 	)
-	tomatoMoisture int64
+	topics = map[string]*int64{
+		"/tomato":    new(int64),
+		"/garlic":    new(int64),
+		"/blueberry": new(int64),
+		"/raspberry": new(int64),
+	}
+	tomatoMoisture, garlicMoisture, blueberryMoisture, raspberryMoisture int64
 )
 
-func onSensorValueReceived(_ mqtt.Client, message mqtt.Message) {
-	x := string(message.Payload())
+func parseAndSwap(p *int64, value []byte) {
+	x := string(value)
 	v, err := strconv.ParseInt(x, 10, 32)
 	if err != nil {
 		panic(err)
 	}
-	atomic.SwapInt64(&tomatoMoisture, v)
+	atomic.SwapInt64(p, v)
+}
+
+func onSensorValueReceived(topic string) func(_ mqtt.Client, message mqtt.Message) {
+	sensor := topics[topic]
+	return func(_ mqtt.Client, message mqtt.Message) {
+		parseAndSwap(sensor, message.Payload())
+	}
 }
 
 type sensorExporter struct {
@@ -40,19 +55,24 @@ func (e *sensorExporter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (e *sensorExporter) Collect(ch chan<- prometheus.Metric) {
-	ch <- prometheus.MustNewConstMetric(moistureSensor, prometheus.GaugeValue, float64(atomic.LoadInt64(&tomatoMoisture)), "tomato")
+	for topic, topicP := range topics {
+		plant := strings.ReplaceAll(topic, "/", "")
+		ch <- prometheus.MustNewConstMetric(moistureSensor, prometheus.GaugeValue, float64(atomic.LoadInt64(topicP)), plant)
+	}
 }
 
 func main() {
 	flag.Parse()
-	opts := mqtt.NewClientOptions().AddBroker("tcp://" + *brokerAddress).SetClientID("exporter")
+	opts := mqtt.NewClientOptions().AddBroker("tcp://" + *brokerAddress).SetClientID("exporter-1")
 
 	tlsConfig := &tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert}
 	opts.SetTLSConfig(tlsConfig)
 
 	opts.OnConnect = func(c mqtt.Client) {
-		if token := c.Subscribe("/tomato", 0, onSensorValueReceived); token.Wait() && token.Error() != nil {
-			panic(token.Error())
+		for topic, _ := range topics {
+			if token := c.Subscribe(topic, 0, onSensorValueReceived(topic)); token.Wait() && token.Error() != nil {
+				panic(token.Error())
+			}
 		}
 	}
 

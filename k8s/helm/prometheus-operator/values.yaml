@@ -34,7 +34,9 @@ grafana:
       allow_sign_up: true
       allowed_organizations: haggis-io
   sidecar:
-    image: joelws/k8s-sidecar:0.1.99-arm
+    image:
+      repository: joelws/k8s-sidecar
+      tag: 0.1.99-arm
   additionalDataSources: []
   enabled: true
 kube-state-metrics:
@@ -103,6 +105,13 @@ prometheus:
       repository: quay.io/prometheus/prometheus
       tag: v2.19.0
     replicas: 1
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
     resources: {}
     retention: 10d
     retentionSize: "5GB"

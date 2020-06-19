@@ -24,7 +24,7 @@ spec:
                 - sensor-exporter
             topologyKey: kubernetes.io/hostname
       containers:
-      - image: joelws/mqtt-sensor-exporter:0.1
+      - image: joelws/mqtt-sensor-exporter:0.2
         args:
           - "-broker-address"
           - "192.168.178.23:32095"
