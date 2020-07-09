@@ -24,10 +24,12 @@ spec:
                 - sensor-exporter
             topologyKey: kubernetes.io/hostname
       containers:
-      - image: joelws/mqtt-sensor-exporter:0.2
+      - image: joelws/mqtt-sensor-exporter:0.3
         args:
           - "-broker-address"
           - "192.168.178.23:32095"
+          - "-plants"
+          - "tomato,garlic,blueberry,raspberry"
         name: exporter
         ports:
         - containerPort: 8080

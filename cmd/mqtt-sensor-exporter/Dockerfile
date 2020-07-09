@@ -5,17 +5,19 @@ RUN adduser --disabled-password -u 10001 exporter
 WORKDIR /go/src/github.com/jw-s/home
 
 RUN apt-get update && \
-    apt-get install -y make git ca-certificates
+    apt-get install -y make git ca-certificates \
+    upx
 
 COPY . .
 
 RUN CGO_ENABLED=0 GOARCH=arm go build -trimpath -a -ldflags="-w -s" -o ./bin/sensor-exporter ./cmd/mqtt-sensor-exporter
 
+RUN upx -9 -v  -o ./bin/sensor-exporter-compressed ./bin/sensor-exporter
 FROM scratch
 
 WORKDIR /
 COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /go/src/github.com/jw-s/home/bin/sensor-exporter /sensor-exporter
+COPY --from=builder /go/src/github.com/jw-s/home/bin/sensor-exporter-compressed /sensor-exporter
 USER exporter
 EXPOSE 8080
 ENTRYPOINT ["/sensor-exporter"]
