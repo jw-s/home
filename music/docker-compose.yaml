@@ -1,0 +1,49 @@
+version: "3"
+services:
+  snapserver:
+    image: joelws/snapserver
+    ports:
+      - 1704:1704
+      - 1705:1705
+      - 1780:1780
+    volumes:
+      - /tmp/snapserver:/tmp
+      - ./config/snapserver.conf:/etc/snapserver.conf
+    devices:
+       - /dev/snd
+    deploy:
+      restart_policy:
+        condition: on-failure
+  snapclient:
+    image: joelws/snapclient
+    command:
+      - "-h"
+      - "snapserver"
+      - "--player"
+      - "alsa"
+      - "--soundcard"
+      - "13"
+    devices:
+       - /dev/snd
+    depends_on:
+      - snapserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+  mopidy:
+    image: joelws/mopidy:3.4.1-1
+    command:
+      - "--config=/etc/mopidy.conf"
+    depends_on:
+      - snapserver
+    ports:
+      - 6600:6600
+      - 6680:6680
+    volumes:
+      - /var/lib/mopidy/iris:/var/lib/mopidy/iris # Iris-specific storage
+      - /var/lib/mopidy/m3u:/var/lib/mopidy/m3u # To persist local playlists
+      - ./config/mopidy.conf:/etc/mopidy.conf
+      - /tmp/snapserver:/tmp
+    deploy:
+      restart_policy:
+        condition: on-failure
